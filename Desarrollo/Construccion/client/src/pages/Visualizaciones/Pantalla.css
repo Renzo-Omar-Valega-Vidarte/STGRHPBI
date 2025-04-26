@@ -1,0 +1,60 @@
+@font-face {
+    font-family: "ColfaxAI";
+    src: url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff2) format("woff2"),
+      url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff) format("woff");
+    font-weight: normal;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: "ColfaxAI";
+    src: url(https://cdn.openai.com/API/fonts/ColfaxAIBold.woff2) format("woff2"),
+      url(https://cdn.openai.com/API/fonts/ColfaxAIBold.woff) format("woff");
+    font-weight: bold;
+    font-style: normal;
+  }
+
+body {
+    font-family: "ColfaxAI", sans-serif;
+}
+
+.pantalla-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #ffffff;
+  }
+  
+  .pantalla-header {
+    font-family: "ColfaxAI", sans-serif;
+    background-color: #ffffff;
+    color: #55A1BF;
+    text-align: center;
+    padding: 20px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+  
+  .pantalla-nav {
+    font-family: "ColfaxAI", sans-serif;
+    background-color: #55A1BF;
+    text-align: center;
+    padding: 10px;
+  }
+  
+  .pantalla-nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+  }
+  
+  .pantalla-footer {
+    font-family: "ColfaxAI", sans-serif;
+    margin-top: auto;
+    background-color: #55A1BF;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+  }
+  
