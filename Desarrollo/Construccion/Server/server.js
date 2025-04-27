@@ -9,8 +9,8 @@ app.use(cors());
 app.use(express.json());
 
 // Rutas
-const dataRoutes = require('./routes/dataRoutes');
-app.use('/api/data', dataRoutes);
+const dataRoutes = require('./routes/data');
+app.use('/api', dataRoutes); // Mount at /api
 
 // Servidor
 app.listen(port, () => {

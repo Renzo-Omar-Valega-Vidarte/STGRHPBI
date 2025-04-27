@@ -1,11 +1,14 @@
-import axios from 'axios';
-
 export async function fetchData() {
   try {
-    const response = await axios.get('http://localhost:3000/api/data');
-    return response.data;
+    const response = await fetch('http://localhost:3000/api/data'); // 👈 asegúrate que esta ruta coincida con tu backend
+    if (!response.ok) {
+      throw new Error('Error al obtener datos');
+    }
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Error al traer datos del backend', error);
-    throw error;
+    console.error('Error en fetchData:', error);
+    return [];
   }
 }
+
