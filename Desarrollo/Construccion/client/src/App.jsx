@@ -19,7 +19,7 @@ function App() {
         <LoadingScreen /> 
       ) : (
         <Routes>
-          <Route path="/" element={<Pantalla1 />} />
+          <Route path="/pantalla1" element={<Pantalla1 />} />
           <Route path="/pantalla2" element={<Pantalla2 />} />
         </Routes>
       )}
