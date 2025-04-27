@@ -21,6 +21,7 @@ function App() {
         <Routes>
           <Route path="/pantalla1" element={<Pantalla1 />} />
           <Route path="/pantalla2" element={<Pantalla2 />} />
+          <Route path="*" element={<Navigate to="/pantalla1" />} /> {/* Redirect to Pantalla1 */}
         </Routes>
       )}
     </Router>
