@@ -86,6 +86,13 @@ body {
     background-color: #55A1BF;
     color: white;
     text-align: center;
-    padding: 10px 0; 
+    padding: 13px 20px; 
     width: 100%;
+    position: fixed; 
+    bottom: 0; 
+    left: 0;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    box-sizing: border-box;
 }
