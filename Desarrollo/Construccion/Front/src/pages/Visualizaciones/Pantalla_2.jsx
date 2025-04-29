@@ -19,19 +19,18 @@ function Pantalla1() {
 
   return (
     <div className="pantalla-container">
-        {/* HEADER */}
       <header className={`pantalla-header ${scrolling ? 'hidden' : ''}`}>
         <div className="header-images">
           <img src={UNMSMAzul} alt="UNMSM Azul" />
-          <span>
-            Solución Tecnológica para la Optimización en la Gestión de Recursos Hídricos en el Perú
-          </span>
+          <Link to="/" className="titulo-link">
+                      Solución Tecnológica para la Optimización en la Gestión de Recursos Hídricos en el Perú
+          </Link>
           <img src={UNMSMFisi} alt="FISI UNMSM" />
         </div>
         
         <nav className="pantalla-nav">
-                <Link to="/pantalla-1">Pantalla 1</Link>
-                <Link to="/pantalla-2">Pantalla 2</Link>
+                <Link to="/pantalla-1">Procesos de Gastos</Link>
+                <Link to="/pantalla-2">Procesos de Agua Potable y Alcantarillado</Link>
           </nav>
       </header>
       <ChatBot />
