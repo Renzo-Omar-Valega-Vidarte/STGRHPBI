@@ -34,9 +34,9 @@ function Pantalla1() {
           <img src={UNMSMFisi} alt="FISI UNMSM" />
         </div>
         <nav className="pantalla-nav">
-          <Link to="/pantalla1">Pantalla 1</Link>
-          <Link to="/pantalla2">Pantalla 2</Link>
-        </nav>
+        <Link to="/pantalla-1">Pantalla 1</Link>
+        <Link to="/pantalla-2">Pantalla 2</Link>
+      </nav>
       </header>
 
       <section className="pantalla-datos">
