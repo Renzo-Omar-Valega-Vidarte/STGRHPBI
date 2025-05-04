@@ -26,13 +26,15 @@ body {
     background-color: #ffffff;
 }
 
-/* Encabezado */
 .pantalla-header {
+    background-image: url('../../assets/margen_titulo.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
     font-family: "ColfaxAI", sans-serif;
-    background-color: #ffffff;
     color: #55A1BF;
     text-align: center;
-    padding: 20px 0; 
+    padding: 8px 0; 
     font-size: 22px;
     font-weight: bold;
     position: fixed;
@@ -40,11 +42,11 @@ body {
     left: 0;
     right: 0;
     width: 100%; 
+    height: 10%;
     z-index: 10;
     transition: top 0.3s ease;
 }
 
-/* Imágenes a los lados */
 .pantalla-header .header-images {
     display: flex;
     justify-content: space-between;
@@ -63,21 +65,22 @@ body {
     top: -100px;
 }
 
-/* Barra de navegación */
 .pantalla-nav {
     font-family: "ColfaxAI", sans-serif;
-    background-color: #55A1BF;
+    background-image: url('../../assets/margen.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     text-align: right;
-    padding: 10px 20px; 
+    padding: 10px 30px; 
     margin-top: 10px;
-}
-
-/* Links de navegación */
+  }
+  
 .pantalla-nav a {
     color: white;
     text-decoration: none;
     font-size: 16px;
-    margin-left: 20px;
+    margin-left: 70px;
 }
 
 .pantalla-footer {
@@ -86,51 +89,27 @@ body {
     background-color: #55A1BF;
     color: white;
     text-align: center;
-    padding: 10px 0; 
+    padding: 13px 20px; 
     width: 100%;
+    position: fixed; 
+    bottom: 0; 
+    left: 0;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    box-sizing: border-box;
 }
 
-.pantalla-main select {
-    font-family: "ColfaxAI", sans-serif;
-    padding: 8px 12px;
-    margin: 5px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    font-size: 16px;
-    color: #333;
-  }
-  
-  .pantalla-main select:disabled {
-    background-color: #eee;
-    color: #999;
-  }
-  
-  .filtros-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 20px;
-    margin-top: 140px; /* para separarlo del header fijo */
-    padding: 0 20px;
-  }
-  
-  .filtro {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .filtro label {
+.titulo-link {
+    color: inherit;
+    text-decoration: none;
     font-weight: bold;
-    margin-bottom: 5px;
-    color: #55A1BF;
+    text-align: center;
   }
-  
-  .filtro select {
-    padding: 8px 12px;
-    border: 2px solid #55A1BF;
-    border-radius: 8px;
-    font-size: 16px;
-    background-color: #fff;
-    color: #333;
-  }
+
+  .pantalla-datos {
+    padding-top: calc(80px + 40px); 
+    padding-bottom: 70px; 
+    width: 100%;
+    box-sizing: border-box;
+}

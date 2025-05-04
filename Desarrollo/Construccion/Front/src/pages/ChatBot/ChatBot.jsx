@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import HumedadGif from '../../assets/humedad.gif';
+import Robot from '../../assets/robot.gif';
 import './ChatBot.css';
 
 function ChatBot() {
@@ -8,7 +8,7 @@ function ChatBot() {
   return (
     <>
       <div className="chatbot-button" onClick={() => setOpen(!open)}>
-        <img src={HumedadGif} alt="Humedad" className="chatbot-gif" />
+        <img src={Robot} alt="Robot" className="chatbot-gif" />
       </div>
 
       {open && (
