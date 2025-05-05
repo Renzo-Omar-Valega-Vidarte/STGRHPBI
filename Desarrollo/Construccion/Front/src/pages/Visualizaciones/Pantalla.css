@@ -111,6 +111,7 @@ body {
     padding-top: calc(80px + 40px); 
     padding-bottom: 70px; 
     width: 100%;
+
     margin: 10px 30px;
     box-sizing: border-box;
     font-size: 16px;
@@ -169,7 +170,6 @@ body {
     box-shadow: 0 0 8px rgba(85, 161, 191, 0.8);
   }
   
-  /* Para asegurar que el mapa se ajuste bien */
   .leaflet-container {
     height: 100% !important;
     width: 100% !important;
