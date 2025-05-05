@@ -10,7 +10,8 @@ app.use(express.json());
 
 // Rutas
 const dataRoutes = require('./routes/data');
-app.use('/api', dataRoutes); // Mount at /api
+app.use('/api', dataRoutes); 
+console.log("Rutas de datos montadas en /api"); 
 
 // Servidor
 app.listen(port, () => {
