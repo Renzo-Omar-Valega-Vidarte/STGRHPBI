@@ -9,24 +9,23 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
+    setTimeout(() => {
+      setLoading(false); 
     }, 2000);
 
-    // Limpieza del efecto (buena práctica)
-    return () => clearTimeout(timer);
   }, []);
 
   return (
     <Router>
       {loading ? (
-        <LoadingScreen />
+        <LoadingScreen /> 
       ) : (
         <Routes>
-          <Route path="/" element={<Principal />} />
+          <Route path="/" element={<Principal />} /> 
           <Route path="/pantalla-1" element={<Pantalla1 />} />
           <Route path="/pantalla-2" element={<Pantalla2 />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" />} /> 
+
         </Routes>
       )}
     </Router>

@@ -1,3 +1,4 @@
+
 export async function fetchData(route) {
   try {
     const response = await fetch(`http://localhost:3000/api/${route}`);

@@ -5,6 +5,7 @@ import UNMSMAzul from '../../assets/unmsm_azul.jpg';
 import UNMSMFisi from '../../assets/fisi_unmsm.png';
 import ChatBot from '../ChatBot/ChatBot';
 import './Pantalla.css';
+
 import { fetchData } from '../../services/dataService';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, AreaChart, Area
@@ -22,6 +23,7 @@ function Pantalla1() {
 
   useEffect(() => {
     const handleScroll = () => setScrolling(window.scrollY > 50);
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -45,6 +47,7 @@ function Pantalla1() {
     };
 
     cargarDatos();
+
   }, []);
 
   // Filtrar los datos
@@ -132,6 +135,9 @@ function Pantalla1() {
 
   return (
     <div className="pantalla-container">
+
+      {/* Header */}
+
       <header className={`pantalla-header ${scrolling ? 'hidden' : ''}`}>
         <div className="header-images">
           <img src={UNMSMAzul} alt="UNMSM Azul" />
@@ -141,6 +147,7 @@ function Pantalla1() {
           <img src={UNMSMFisi} alt="FISI UNMSM" />
         </div>
         <nav className="pantalla-nav">
+
           <Link to="/pantalla-1">Procesos de Gastos</Link>
           <Link to="/pantalla-2">Procesos de Agua Potable y Alcantarillado</Link>
         </nav>
@@ -254,6 +261,13 @@ function Pantalla1() {
       </section>
 
       <ChatBot />
+
+      {/* Footer */}
+
+      <footer className="pantalla-footer">
+        Lima, Perú. 2025
+      </footer>
+
     </div>
   );
 }
