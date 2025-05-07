@@ -12,8 +12,35 @@ const fetchTable = async (schema, table, res) => {
   }
 };
 
-// Controladores individuales por tabla
-const getFactGastos = (req, res) => fetchTable('Gastos', 'FACT_GASTOS', res);
+// Paginación específica para FACT_GASTOS
+const getFactGastos = async (req, res) => {
+  try {
+    const pool = await poolPromise;
+
+    const result = await pool.request().query(`
+      SELECT 
+        f.MONTO_PIA,
+        f.MONTO_EJECUCION,
+        d.ANIO,
+        u.DEPARTAMENTO,
+        g.GENERICA_NOMBRE
+      FROM [Gastos].[FACT_GASTOS] f
+      INNER JOIN [Generico].[DIM_FECHA] d
+        ON f.Fecha_Key = d.Fecha_Key
+      INNER JOIN [Generico].[DIM_UBIGEO] u
+        ON f.UBIGEO_Key = u.UBIGEO_Key
+      INNER JOIN [Gastos].[DIM_GENERICA] g
+        ON f.Generica_Key = g.Generica_Key
+    `);
+
+    res.json(result.recordset);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+// Controladores genéricos
 const getDimFecha = (req, res) => fetchTable('Generico', 'DIM_FECHA', res);
 const getDimActividad = (req, res) => fetchTable('Gastos', 'DIM_ACTIVIDAD', res);
 const getDimCategoria = (req, res) => fetchTable('Gastos', 'DIM_CATEGORIA', res);
@@ -38,10 +65,8 @@ const getDimMunicipalidad = (req, res) => fetchTable('Atm', 'DIM_MUNICIPALIDAD',
 const getDimUbicacionATM = (req, res) => fetchTable('Atm', 'DIM_UBICACION_ATM', res);
 
 const getFactEnapres = (req, res) => fetchTable('Enapres', 'FACT_ENAPRES', res);
-
 const getDimUbigeo = (req, res) => fetchTable('Generico', 'DIM_UBIGEO', res);
 
-// Exportamos todos los controladores
 module.exports = {
   getFactGastos,
   getDimFecha,
