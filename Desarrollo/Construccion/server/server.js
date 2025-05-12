@@ -1,18 +1,19 @@
 const express = require('express');
-const cors = require('cors');
-const app = express();
+const cors    = require('cors');
 require('dotenv').config();
+
+const app  = express();
 const port = process.env.PORT || 3000;
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Rutas
-const dataRoutes = require('./routes/data');
-app.use('/api', dataRoutes); // Mount at /api
+// Routes
+const dataRoutes = require('./routes/dataRoutes');
+app.use('/api', dataRoutes);
 
-// Servidor
+// Server
 app.listen(port, () => {
-    console.log(`Servidor corriendo en puerto ${port}`);
+  console.log(`Servidor corriendo en puerto ${port}`);
 });
