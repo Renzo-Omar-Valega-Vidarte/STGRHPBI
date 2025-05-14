@@ -5,10 +5,14 @@ import UNMSMAzul from '../../assets/unmsm_azul.jpg';
 import UNMSMFisi from '../../assets/fisi_unmsm.png';
 import ChatBot from '../ChatBot/ChatBot';
 import './Pantalla.css';
-
+import {
+  CircularProgressbarWithChildren,
+  buildStyles
+} from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
 import { fetchData } from '../../services/dataService';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, AreaChart, Area
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, AreaChart, Area, Cell
 } from 'recharts';
 
 function Pantalla1() {
@@ -16,11 +20,30 @@ function Pantalla1() {
   const [fechas, setFechas] = useState([]);
   const [ubigeo, setUbigeo] = useState([]);
   const [anioFiltro, setAnioFiltro] = useState('');
-  const [semestreFiltro, setSemestreFiltro] = useState('');
   const [departamentoFiltro, setDepartamentoFiltro] = useState('');
   const [gastos, setGastos] = useState([]);
   const [datosCargados, setDatosCargados] = useState(false);
+  
+  const getColor = (valor) => {
+  if (valor >= 80) return '#4CAF50';   // Verde
+  if (valor >= 60) return '#FFC107';   // Amarillo
+  return '#F44336';                    // Rojo
+  };
 
+  const renderCustomLabel = ({ x, y, width, value }) => {
+  const offsetX = 5;
+  return (
+    <text
+      x={x + width / 2}
+      y={y - offsetX}
+      fill="#000"
+      textAnchor="middle"
+      fontSize={12}
+    >
+      {`${value.toFixed(2)}%`}
+    </text>
+  );
+  };
   useEffect(() => {
     const handleScroll = () => setScrolling(window.scrollY > 50);
 
@@ -29,52 +52,105 @@ function Pantalla1() {
   }, []);
 
   useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        const [fechasData, ubigeoData, gastosData] = await Promise.all([
-          fetchData('dim-fecha'),
-          fetchData('dim-ubigeo'),
-          fetchData('fact-gastos')
-        ]);
-        setFechas(fechasData);
-        setUbigeo(ubigeoData);
-        setGastos(Array.isArray(gastosData) ? gastosData : []);
-        setDatosCargados(true); // Indicamos que los datos están cargados
-      } catch (err) {
-        console.error(err);
-        setDatosCargados(false); // Si hay error en la carga, marcamos como no cargados
-      }
-    };
+  const cargarDatos = async () => {
+    try {
+      const [fechasData, ubigeoData, gastosData] = await Promise.all([
+        fetchData('dim-fecha'),
+        fetchData('dim-ubigeo'),
+        fetchData('fact-gastos')
+      ]);
 
-    cargarDatos();
+      setFechas(fechasData);
+      setUbigeo(ubigeoData);
+      setGastos(Array.isArray(gastosData) ? gastosData : []);
+      
+      // Encontrar el mayor año y establecerlo como filtro por defecto
+      const aniosDisponibles = fechasData
+      .map(d => parseInt(d.ANIO))     
+      .filter(n => !isNaN(n));         
 
-  }, []);
+      const maxAnio = Math.max(...aniosDisponibles);
+      setAnioFiltro(maxAnio.toString()); 
+      setAnioFiltro(maxAnio.toString()); // Asegúrate de que sea string si usas value como string
+
+      setDatosCargados(true);
+    } catch (err) {
+      console.error(err);
+      setDatosCargados(false);
+    }
+  };
+
+  cargarDatos();
+}, []);
+useEffect(() => {
+  if (fechas.length > 0) {
+    const anios = [...new Set(fechas.map(d => d.ANIO).filter(Boolean))].sort();
+    setAnioFiltro(anios[anios.length - 1]); // último año
+  }
+}, [fechas]);
 
   // Filtrar los datos
+  const gastosPorDepartamento = gastos.filter(item =>
+  departamentoFiltro ? item.DEPARTAMENTO === departamentoFiltro : true
+  );
+
   const gastosFiltrados = gastos.filter(item => {
-    const coincideAnio = anioFiltro ? item.ANIO === anioFiltro : true;
-    const coincideSemestre = semestreFiltro ? item.SEMESTRE === semestreFiltro : true;
-    const coincideDepartamento = departamentoFiltro ? item.DEPARTAMENTO === departamentoFiltro : true;
-    return coincideAnio && coincideSemestre && coincideDepartamento;
-  });
+  const anio = parseInt(item.ANIO);
+  const coincideAnio = anioFiltro ? anio === parseInt(anioFiltro) : true;
+  const coincideDepartamento = departamentoFiltro ? item.DEPARTAMENTO === departamentoFiltro : true;
+  return coincideAnio && coincideDepartamento;
+});
+
+  const gastoPorHabitante = (() => {
+  const datosDelAnio = gastosFiltrados.filter(g => g.ANIO === anioFiltro);
+
+  const totalEjecucion = datosDelAnio.reduce(
+    (sum, item) => sum + Number(item.MONTO_EJECUCION || 0),
+    0
+  );
+  const poblacionUnica = datosDelAnio.length > 0
+    ? Number(datosDelAnio[0].POBLACION_DEPARTAMENTO || 0)
+    : 0;
+
+  return poblacionUnica > 0
+    ? (totalEjecucion / poblacionUnica).toFixed(2)
+    : '0.00';
+})();
 
   const datosPIA = Object.values(
-    gastosFiltrados.reduce((acc, item) => {
-      const anio = item.ANIO;
-      const ejecutado = Number(item.MONTO_EJECUCION) || 0;
-      const pia = Number(item.MONTO_PIA) || 0;
-      if (!acc[anio]) acc[anio] = { anio, montoEjecutado: 0, montoPIA: 0 };
-      acc[anio].montoEjecutado += ejecutado;
-      acc[anio].montoPIA += pia;
-      return acc;
-    }, {})
+  gastosPorDepartamento.reduce((acc, item) => {
+    const anio = item.ANIO;
+    const ejecutado = Number(item.MONTO_EJECUCION) || 0;
+    const pia = Number(item.MONTO_PIA) || 0;
+    if (!acc[anio]) acc[anio] = { anio, montoEjecutado: 0, montoPIA: 0 };
+    acc[anio].montoEjecutado += ejecutado;
+    acc[anio].montoPIA += pia;
+    return acc;
+  }, {})
   ).map(d => ({
     anio: d.anio,
     porcentaje: d.montoPIA ? (d.montoEjecutado / d.montoPIA) * 100 : 0
   }));
 
+  const datosPIAOriginal = Object.values(
+    gastosPorDepartamento.reduce((acc, item) => {
+      const anio = item.ANIO;
+      const pia = Number(item.MONTO_PIA) || 0;
+      if (!acc[anio]) acc[anio] = { anio, montoPIA: 0 };
+      acc[anio].montoPIA += pia;
+      return acc;
+    }, {})
+  );
+
+  const montoPIAActual = datosPIAOriginal.find(d => d.anio === anioFiltro)?.montoPIA || 0;
+  const montoPIAAnterior = datosPIAOriginal.find(d => d.anio === (parseInt(anioFiltro) - 1).toString())?.montoPIA || 0;
+
+  const variacionPIA = montoPIAAnterior > 0
+    ? ((montoPIAActual - montoPIAAnterior) / montoPIAAnterior) * 100
+    : 0;
+
   const datosPIM = Object.values(
-    gastosFiltrados.reduce((acc, item) => {
+    gastosPorDepartamento.reduce((acc, item) => {
       const anio = item.ANIO;
       const ejecutado = Number(item.MONTO_EJECUCION) || 0;
       const pim = Number(item.MONTO_PIM) || 0;
@@ -87,32 +163,8 @@ function Pantalla1() {
     anio: d.anio,
     porcentaje: d.montoPIM ? (d.montoEjecutado / d.montoPIM) * 100 : 0
   }));
+  const anioActual = parseInt(anioFiltro) || Math.max(...fechas.map(d => parseInt(d.ANIO)).filter(n => !isNaN(n)));
 
-  const anioActual = parseInt(anioFiltro) || new Date().getFullYear();
-
-  const datosProcesados = (() => {
-    const agrupado = {};
-    gastosFiltrados.forEach(item => {
-      const nombre = item.GENERICA_NOMBRE;
-      const anio = item.ANIO;
-      const monto = Number(item.MONTO_PIA) || 0;
-      if (!agrupado[nombre]) agrupado[nombre] = {};
-      agrupado[nombre][anio] = monto;
-    });
-
-    return Object.entries(agrupado).map(([nombre, valores]) => {
-      const actual = valores[anioActual] || 0;
-      const anterior = valores[anioActual - 1] || 0;
-      const variacion = anterior > 0 ? ((actual - anterior) / anterior) * 100 : null;
-
-      return {
-        GENERICA_NOMBRE: nombre,
-        PIA_Actual: actual,
-        PIA_Anterior: anterior,
-        Variacion: variacion,
-      };
-    });
-  })();
 
   const datosArea = () => {
     const agrupado = {};
@@ -132,6 +184,30 @@ function Pantalla1() {
   if (!datosCargados) {
     return <LoadingScreen />;
   }
+
+  const KPISemicircular = () => (
+  <div style={{ width: 200, height: 100, margin: '0 auto' }}>
+    <CircularProgressbarWithChildren
+      value={variacionPIA}
+      maxValue={100}
+      minValue={-100}
+      styles={buildStyles({
+        rotation: 0.75,
+        strokeLinecap: 'round',
+        pathColor: variacionPIA >= 0 ? '#4caf50' : '#f44336',
+        trailColor: '#d6d6d6'
+      })}
+      circleRatio={0.5}
+    >
+      <div style={{ fontSize: 16, marginTop: -5 }}>
+        {variacionPIA.toFixed(1)}%
+      </div>
+      <div style={{ fontSize: 12, color: '#555' }}>
+        Variación PIA {parseInt(anioFiltro) - 1} → {anioFiltro}
+      </div>
+    </CircularProgressbarWithChildren>
+  </div>
+  );
 
   return (
     <div className="pantalla-container">
@@ -159,21 +235,12 @@ function Pantalla1() {
           <div className="filtro-contenedor">
             <label>Año</label>
             <select value={anioFiltro} onChange={(e) => setAnioFiltro(e.target.value)}>
-              <option value="">Todos</option>
-              {[...new Set(fechas.map(d => d.ANIO).filter(Boolean))].sort().map(anio => (
+            {[...new Set(fechas.map(d => d.ANIO).filter(Boolean))]
+              .sort()
+              .map(anio => (
                 <option key={anio} value={anio}>{anio}</option>
               ))}
-            </select>
-          </div>
-
-          <div className="filtro-contenedor">
-            <label>Semestre</label>
-            <select value={semestreFiltro} onChange={(e) => setSemestreFiltro(e.target.value)}>
-              <option value="">Todos</option>
-              {[...new Set(fechas.map(d => d.SEMESTRE).filter(Boolean))].map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+          </select>
           </div>
 
           <div className="filtro-contenedor">
@@ -188,6 +255,25 @@ function Pantalla1() {
         </div>
       </section>
 
+     {/* KPI */}
+      <section className="kpi-container">
+        <div className="kpi-left">
+          <h2 className="titulo-tabla" style={{ textAlign: 'center' }}>Variación Interanual del PIA</h2>
+          <KPISemicircular />
+        </div>
+
+        <div className="gasto-container">
+          <div className="titulo-tabla">
+            <span>S/. ejecutado por habitante</span>
+          </div>
+          <div className="gasto-content">
+            <span className="gasto">{gastoPorHabitante}</span>
+          </div>
+        </div>
+      </section>
+
+      
+
       {datosPIA.length > 0 && datosPIM.length > 0 ? (
         <section className="graficos-container">
           <div className="grafico-item">
@@ -198,7 +284,11 @@ function Pantalla1() {
                 <XAxis dataKey="anio"><Label value="Año" offset={-5} position="insideBottom" /></XAxis>
                 <YAxis domain={[0, 100]}><Label value="%" angle={-90} position="insideLeft" /></YAxis>
                 <Tooltip formatter={value => `${value.toFixed(2)}%`} />
-                <Bar dataKey="porcentaje" fill="#4CAF50" />
+                <Bar dataKey="porcentaje" label={renderCustomLabel}>
+                {datosPIA.map((entry, index) => (
+                  <Cell key={`cell-pia-${index}`} fill={getColor(entry.porcentaje)} />
+                ))}
+              </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -211,7 +301,12 @@ function Pantalla1() {
                 <XAxis dataKey="anio"><Label value="Año" offset={-5} position="insideBottom" /></XAxis>
                 <YAxis domain={[0, 100]}><Label value="%" angle={-90} position="insideLeft" /></YAxis>
                 <Tooltip formatter={value => `${value.toFixed(2)}%`} />
-                <Bar dataKey="porcentaje" fill="#2196F3" />
+                <Bar dataKey="porcentaje" label={renderCustomLabel}>
+                {datosPIM.map((entry, index) => (
+                  <Cell key={`cell-pim-${index}`} fill={getColor(entry.porcentaje)} />
+                ))}
+              </Bar>
+
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -223,23 +318,19 @@ function Pantalla1() {
       {/* Contenedor de tabla y gráfico de área en paralelo */}
       <section className="area-tabla-container">
         <div className="tabla-contenedor">
-          <p className="titulo-tabla">Variación del PIA por Genérica</p>
+          <p className="titulo-tabla">Suma del PIA por Genérica ({anioFiltro})</p>
           <table>
             <thead>
               <tr>
                 <th>Genérica</th>
-                <th>{anioActual - 1}</th>
-                <th>{anioActual}</th>
-                <th>Variación %</th>
+                <th>PIA Total</th>
               </tr>
             </thead>
             <tbody>
-              {datosProcesados.map((fila) => (
+              {datosArea().map((fila) => (
                 <tr key={fila.GENERICA_NOMBRE}>
                   <td>{fila.GENERICA_NOMBRE}</td>
-                  <td>{fila.PIA_Anterior.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}</td>
-                  <td>{fila.PIA_Actual.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}</td>
-                  <td>{fila.Variacion !== null ? `${fila.Variacion.toFixed(2)}%` : 'N/A'}</td>
+                  <td>{fila.MONTO_PIA.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}</td>
                 </tr>
               ))}
             </tbody>
@@ -251,7 +342,7 @@ function Pantalla1() {
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={datosArea()}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="GENERICA_NOMBRE" interval={0} angle={-45} textAnchor="end" height={80} />
+              <XAxis dataKey="GENERICA_NOMBRE" interval={0} angle={-45} textAnchor="end" height={180} tickFormatter={(nombre) => nombre.length > 15 ? nombre.slice(0, 15) + '…' : nombre} />
               <YAxis tickFormatter={(value) => value.toLocaleString('es-PE')} />
               <Tooltip formatter={(value) => value.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })} />
               <Area type="monotone" dataKey="MONTO_PIA" stroke="#8884d8" fill="#8884d8" />
@@ -259,9 +350,9 @@ function Pantalla1() {
           </ResponsiveContainer>
         </div>
       </section>
-
+              
+      <div className="rectangulo-blanco"></div>
       <ChatBot />
-
       {/* Footer */}
 
       <footer className="pantalla-footer">

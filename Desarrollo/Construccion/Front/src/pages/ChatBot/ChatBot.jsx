@@ -1,74 +1,104 @@
-import { useState } from 'react';
-import Robot from '../../assets/robot.gif';
+import React, { useState, useRef, useEffect } from 'react';
 import './ChatBot.css';
+import botGif from '../../assets/robot.gif'; 
 
-function ChatBot() {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([{ sender: 'bot', text: '¡Hola! ¿En qué puedo ayudarte?' }]);
+const ChatBot = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [isThinking, setIsThinking] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  const sendMessage = async () => {
+  const toggleChatbot = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { sender: 'user', text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage = { text: input, type: 'user' };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setLoading(true);
+    setIsThinking(true);
 
     try {
-      const response = await fetch('http://localhost:5000/chat', {
+      const response = await fetch('http://127.0.0.1:8000/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ prompt: input }), 
       });
 
-      const data = await response.json();
-      const botMessage = { sender: 'bot', text: data.reply || 'No entendí eso.' };
 
-      setMessages((prev) => [...prev, botMessage]);
+      if (!response.ok) {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.response) {
+        throw new Error('La respuesta del servidor no contiene el campo esperado.');
+      }
+
+      setMessages(prev => [...prev, { text: data.response, type: 'bot' }]);
     } catch (error) {
-      console.error(error);
-      setMessages((prev) => [...prev, { sender: 'bot', text: 'Hubo un error al conectar con el servidor.' }]);
+      console.error('Error al comunicarse con el backend:', error);
+      setMessages(prev => [
+        ...prev,
+        { text: '⚠️ Error: No se pudo obtener respuesta del servidor.', type: 'bot' },
+      ]);
     } finally {
-      setLoading(false);
+      setIsThinking(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') sendMessage();
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') handleSend();
   };
 
   return (
     <>
-      <div className="chatbot-button" onClick={() => setOpen(!open)}>
-        <img src={Robot} alt="Chatbot" className="chatbot-gif" />
+      <div className="chatbot-button" onClick={toggleChatbot}>
+        <img src={botGif} alt="Chatbot" className="chatbot-gif" />
       </div>
 
-      {open && (
+      {isOpen && (
         <div className="chatbot-window">
           <div className="chatbot-messages">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`chat-message ${msg.sender}`}>
-                {msg.text}
+            {messages.map((msg, index) => (
+              <div key={index} className={`chat-message ${msg.type}`}>
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{msg.text}</pre>
               </div>
             ))}
-            {loading && <div className="chat-message bot">Escribiendo...</div>}
+            {isThinking && (
+              <div className="chat-message bot">
+                <pre>🤖 Pensando...</pre>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
           <div className="chatbot-input">
             <input
               type="text"
-              placeholder="Escribe algo..."
+              placeholder="Escribe tu pregunta..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={handleKeyPress}
             />
-            <button onClick={sendMessage}>Enviar</button>
+            <button onClick={handleSend}>Enviar</button>
           </div>
         </div>
       )}
     </>
   );
-}
+};
 
 export default ChatBot;
+

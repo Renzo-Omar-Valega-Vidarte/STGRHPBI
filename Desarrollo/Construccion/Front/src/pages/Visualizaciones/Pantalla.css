@@ -108,8 +108,8 @@ body {
   }
 
   .pantalla-datos {
-    padding-top: calc(80px + 40px); 
-    padding-bottom: 70px; 
+    padding-top: 120px; 
+  padding-bottom: 90px;
     width: 100%;
 
     margin: 10px 30px;
@@ -240,19 +240,67 @@ body {
 
   .area-tabla-container {
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: flex-start;
     flex-wrap: nowrap; 
-    gap: 20px; 
+    gap: 70px; 
     margin: 30px; 
   }
   
   .grafico-area {
+    overflow: visible;
     width: 100%; 
     max-width: 1300px;
     height: auto;
-    padding: 10px;
+    padding: 30px;
     border: 1.5px solid #55A1BF;
     background-color: #ffffff;
     margin: 0;
   }
+
+.kpi-container {
+  display: flex;
+  gap: 2rem;
+  margin-left: 30px;
+  margin-bottom: 20px;
+}
+
+.kpi-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  border: 1.5px solid #55A1BF;
+  width: 300px; 
+  height: 200px; 
+}
+
+.gasto-container {
+  background-color: #fff;
+  width: 300px;
+  height: 200px; 
+  border: 1.5px solid #55A1BF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.gasto-content {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4caf50; 
+}
+
+.gasto {
+  font-size: 1.2rem;
+  color: #4caf50;
+}
+
+.rectangulo-blanco {
+  width: 100%;      /* Abarca todo el ancho de la pantalla */
+  height: 50px;     /* Altura del rectángulo */
+  background-color: #fff;  /* Fondo blanco */
+  border-top: 1px solid #ddd; /* Opcional: borde superior para separar */
+}

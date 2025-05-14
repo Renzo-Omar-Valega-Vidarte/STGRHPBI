@@ -6,9 +6,11 @@ async function getFactGastos(req, res) {
     const result = await pool.request().query(`
       SELECT 
         f.MONTO_PIA,
+        f.MONTO_PIM,
         f.MONTO_EJECUCION,
         d.ANIO,
         u.DEPARTAMENTO,
+        u.POBLACION_DEPARTAMENTO,
         g.GENERICA_NOMBRE
       FROM [Gastos].[FACT_GASTOS] f
       INNER JOIN [Generico].[DIM_FECHA] d
