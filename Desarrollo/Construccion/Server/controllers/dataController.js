@@ -242,7 +242,19 @@ async function getDimUbicacionATM(req, res) {
 async function getFactEnapres(req, res) {
   try {
     const pool   = await poolPromise;
-    const result = await pool.request().query('SELECT * FROM [Enapres].[FACT_ENAPRES]');
+    const result = await pool.request().query(
+      `SELECT
+        f.[129B],
+        d.ANIO,
+        u.DEPARTAMENTO
+      FROM [Enapres].[FACT_ENAPRES] f
+      INNER JOIN [Generico].[DIM_FECHA] d
+        ON f.Fecha_Key = d.Fecha_Key
+      INNER JOIN [Generico].[DIM_UBIGEO] u
+        ON f.UBIGEO_Key = u.UBIGEO_Key
+      `
+    
+    );
     res.json(result.recordset);
   } catch (err) {
     res.status(500).json({ error: err.message });
