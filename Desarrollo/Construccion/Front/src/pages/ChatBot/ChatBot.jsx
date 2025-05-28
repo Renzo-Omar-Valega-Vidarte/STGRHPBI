@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ChatBot.css';
-import botGif from '../../assets/robot.gif'; 
+import botGif from '../../assets/robot.gif';
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
+  const [mode, setMode] = useState('sql'); // 'sql' or 'rag'
   const messagesEndRef = useRef(null);
 
   const toggleChatbot = () => {
@@ -25,34 +26,42 @@ const ChatBot = () => {
     if (!input.trim()) return;
 
     const userMessage = { text: input, type: 'user' };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsThinking(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/ask', {
+      const endpoint = mode === 'sql' ? '/query' : '/ask';
+      const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: input }), 
+        body: JSON.stringify({ prompt: input }),
       });
-
-
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status}`);
-      }
 
       const data = await response.json();
 
-      if (!data.response) {
-        throw new Error('La respuesta del servidor no contiene el campo esperado.');
+      if (data.error) {
+        const botMessage = {
+          text: `⚠️ ${data.error}${data.sql ? `\n\n🔎 SQL generado (posiblemente incorrecto):\n${data.sql}` : ''}`,
+          type: 'bot',
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        return;
       }
 
-      setMessages(prev => [...prev, { text: data.response, type: 'bot' }]);
+      if (mode === 'sql') {
+        const sqlMessage = { text: `🔍 SQL:\n${data.sql}`, type: 'bot' };
+        const resultMessage = { type: 'table', rows: data.results };
+        setMessages((prev) => [...prev, sqlMessage, resultMessage]);
+      } else {
+        const botMessage = { text: data.response, type: 'bot' };
+        setMessages((prev) => [...prev, botMessage]);
+      }
     } catch (error) {
-      console.error('Error al comunicarse con el backend:', error);
-      setMessages(prev => [
+      console.error('Error:', error);
+      setMessages((prev) => [
         ...prev,
-        { text: '⚠️ Error: No se pudo obtener respuesta del servidor.', type: 'bot' },
+        { text: `⚠️ ${error.message}`, type: 'bot' },
       ]);
     } finally {
       setIsThinking(false);
@@ -71,10 +80,44 @@ const ChatBot = () => {
 
       {isOpen && (
         <div className="chatbot-window">
+          <div className="chatbot-header">
+            <label>Modo:</label>
+            <select value={mode} onChange={(e) => setMode(e.target.value)}>
+              <option value="sql">SQL</option>
+              <option value="rag">RAG</option>
+            </select>
+          </div>
+
           <div className="chatbot-messages">
             {messages.map((msg, index) => (
               <div key={index} className={`chat-message ${msg.type}`}>
-                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{msg.text}</pre>
+                {msg.type === 'table' ? (
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          {msg.rows.length > 0 &&
+                            Object.keys(msg.rows[0]).map((key) => (
+                              <th key={key}>{key}</th>
+                            ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {msg.rows.map((row, i) => (
+                          <tr key={i}>
+                            {Object.values(row).map((val, j) => (
+                              <td key={j}>{String(val)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+                    {msg.text}
+                  </pre>
+                )}
               </div>
             ))}
             {isThinking && (
@@ -84,6 +127,7 @@ const ChatBot = () => {
             )}
             <div ref={messagesEndRef} />
           </div>
+
           <div className="chatbot-input">
             <input
               type="text"
@@ -101,4 +145,7 @@ const ChatBot = () => {
 };
 
 export default ChatBot;
+
+
+
 

@@ -79,3 +79,60 @@
   border: none;
   cursor: pointer;
 }
+
+/* Mode selector styles */
+.chatbot-header {
+  margin: -15px -15px 10px -15px; /* align with chatbot window padding */
+  padding: 10px 15px;
+  background-color: #f3f3f3;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.chatbot-header label {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.chatbot-header select {
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* Table wrapper for SQL results */
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  background-color: #fff;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  text-align: left;
+  max-width: 120px;
+  word-break: break-word;
+}
+
+th {
+  background-color: #eaeaea;
+  font-weight: bold;
+}
+
