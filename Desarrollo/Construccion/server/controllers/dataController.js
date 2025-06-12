@@ -22,6 +22,7 @@ async function getFactGastos(req, res) {
     `);
     res.json(result.recordset);
   } catch (err) {
+    console.error("Error en getFactGastos:", err);
     res.status(500).json({ error: err.message });
   }
 }
@@ -211,7 +212,27 @@ async function getDimTipoTransaccion(req, res) {
 async function getFactATM(req, res) {
   try {
     const pool   = await poolPromise;
-    const result = await pool.request().query('SELECT * FROM [Atm].[FACT_ATM]');
+    const result = await pool.request().query(
+      `SELECT 
+        f.[CCPP_SIST_AGUA],
+        f.[CCPP_SIST_NCONV],
+        f.[MONTO_POI],
+        f.[CCPP_TOTAL],
+        f.[CCPP_SIST_CONV],
+        m.[ALCALDE],
+        m.[ATM],
+        d.ANIO,
+        u.DEPARTAMENTO
+
+      FROM [Atm].[FACT_ATM] f
+      INNER JOIN [Generico].[DIM_FECHA] d
+        ON f.Fecha_Key = d.Fecha_Key
+      INNER JOIN [Atm].[DIM_UBICACION_ATM] u
+        ON f.Ubicacion_Key = u.Ubicacion_Key
+      INNER JOIN [Atm].[DIM_MUNICIPALIDAD] m
+        ON f.Municipalidad_Key = m.Municipalidad_Key
+      `
+    );
     res.json(result.recordset);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -245,6 +266,9 @@ async function getFactEnapres(req, res) {
     const result = await pool.request().query(
       `SELECT
         f.[129B],
+        f.[130ZB2],
+        f.[130ZA],
+        f.[ProcedenciaAgua],
         d.ANIO,
         u.DEPARTAMENTO
       FROM [Enapres].[FACT_ENAPRES] f

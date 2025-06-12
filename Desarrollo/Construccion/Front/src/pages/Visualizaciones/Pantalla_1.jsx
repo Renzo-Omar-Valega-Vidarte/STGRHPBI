@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import LoadingScreen from '../Pantalla_Carga/LoadingScreen';
 import { Link } from 'react-router-dom';
 import UNMSMAzul from '../../assets/unmsm_azul.jpg';
 import UNMSMFisi from '../../assets/fisi_unmsm.png';
+import Deco1 from '../../assets/deco_1.png';
+import Descarga from '../Descarga/BotonCaptura';
 import ChatBot from '../ChatBot/ChatBot';
 import './Pantalla.css';
 import {
@@ -12,7 +14,7 @@ import {
 import "react-circular-progressbar/dist/styles.css";
 import { fetchData } from '../../services/dataService';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, AreaChart, Area, Cell
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, AreaChart, Area, Cell, Legend, LabelList, Treemap
 } from 'recharts';
 
 function Pantalla1() {
@@ -108,12 +110,27 @@ useEffect(() => {
     (sum, item) => sum + Number(item.MONTO_EJECUCION || 0),
     0
   );
-  const poblacionUnica = datosDelAnio.length > 0
-    ? Number(datosDelAnio[0].POBLACION_DEPARTAMENTO || 0)
-    : 0;
 
-  return poblacionUnica > 0
-    ? (totalEjecucion / poblacionUnica).toFixed(2)
+  let poblacionTotal = 0;
+
+  if (departamentoFiltro) {
+    const poblacionUnica = datosDelAnio.length > 0
+      ? Number(datosDelAnio[0].POBLACION_DEPARTAMENTO || 0)
+      : 0;
+    poblacionTotal = poblacionUnica;
+  } else {
+    const poblacionesUnicas = {};
+    datosDelAnio.forEach(item => {
+      const dep = item.DEPARTAMENTO;
+      if (dep && item.POBLACION_DEPARTAMENTO && !poblacionesUnicas[dep]) {
+        poblacionesUnicas[dep] = Number(item.POBLACION_DEPARTAMENTO);
+      }
+    });
+    poblacionTotal = Object.values(poblacionesUnicas).reduce((a, b) => a + b, 0);
+  }
+
+  return poblacionTotal > 0
+    ? (totalEjecucion / poblacionTotal).toFixed(2)
     : '0.00';
 })();
 
@@ -208,6 +225,43 @@ useEffect(() => {
     </CircularProgressbarWithChildren>
   </div>
   );
+
+  
+  const datosEjecutadoPorDepartamento = (() => {
+  const datosAnio = gastos.filter(item => item.ANIO === anioFiltro);
+
+  const agrupados = {};
+
+  datosAnio.forEach(item => {
+    const dep = item.DEPARTAMENTO;
+    const monto = Number(item.MONTO_EJECUCION) || 0;
+    if (!agrupados[dep]) agrupados[dep] = 0;
+    agrupados[dep] += monto;
+  });
+
+  return Object.entries(agrupados)
+    .map(([departamento, monto]) => ({ departamento, monto }))
+    .sort((a, b) => b.monto - a.monto); // orden descendente tipo embudo
+})();
+
+  const dataProyectosPorDepartamento = (() => {
+  const gastosAnio = gastos.filter(item =>
+    item.ANIO === anioFiltro && item.MONTO_EJECUCION && Number(item.MONTO_EJECUCION) > 0
+  );
+
+  const conteoPorDepartamento = gastosAnio.reduce((acc, curr) => {
+    const dep = curr.DEPARTAMENTO || 'Sin Departamento';
+    acc[dep] = (acc[dep] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(conteoPorDepartamento).map(([departamento, count]) => ({
+    name: departamento,
+    size: count,
+  }));
+})();
+
+
 
   return (
     <div className="pantalla-container">
@@ -339,7 +393,7 @@ useEffect(() => {
 
         <div className="grafico-area">
           <h2 className="titulo-tabla" style={{ textAlign: 'center' }}>Suma del PIA por Genérica</h2>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={datosArea()}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="GENERICA_NOMBRE" interval={0} angle={-45} textAnchor="end" height={180} tickFormatter={(nombre) => nombre.length > 15 ? nombre.slice(0, 15) + '…' : nombre} />
@@ -349,9 +403,64 @@ useEffect(() => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+        <div className="contenedor-deco1">
+          <img src={Deco1} alt="Decoración" />
+        </div>
       </section>
-              
+      
+      {/* Contenedor de grafico de barra y mapa*/}
+      <section className="grafico-embudo-contenedor">
+          {/* Treemap a la izquierda */}
+          <div className="grafico-treemap">
+            <h3 className="grafico-titulo">
+              Cantidad de Proyectos Ejecutados - {anioFiltro}
+            </h3>
+            <div >
+              <ResponsiveContainer>
+                <Treemap
+                  data={dataProyectosPorDepartamento}
+                  dataKey="size"
+                  stroke="#fff"
+                >
+                  <Tooltip formatter={(value, name) => [`${value}`, 'Cantidad']} />
+                </Treemap>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Embudo a la derecha */}
+          <div className="grafico-embudo">
+            <h3 className="grafico-titulo">
+              Monto de Ejecución por Departamento - {anioFiltro}
+            </h3>
+            <div >
+              <ResponsiveContainer>
+                <BarChart
+                  layout="vertical"
+                  data={datosEjecutadoPorDepartamento}
+                  margin={{ top: 10, right: 40, left: 50, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    type="number"
+                    tickFormatter={(value) => `S/ ${value.toLocaleString()}`}
+                  >
+                    <Label value="Monto Ejecutado (S/.)" offset={0} position="insideBottom" />
+                  </XAxis>
+                  <YAxis dataKey="departamento" type="category" width={80} />
+                  <Tooltip formatter={(value) => `S/ ${value.toLocaleString()}`} />
+                  <Bar dataKey="monto" fill="#6FA3B8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+
+
+
       <div className="rectangulo-blanco"></div>
+
+      <Descarga />
       <ChatBot />
       {/* Footer */}
 
