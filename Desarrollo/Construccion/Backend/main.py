@@ -20,7 +20,8 @@ from schema_metadata import schema  # External schema definition
 from sql_examples import sql_examples  # External SQL examples
 
 # Load environment variables
-load_dotenv()
+dotenv_path = Path(r"C:\Users\RENZO\Documents\GitHub\STGRHPBI\Desarrollo\Construccion\Server\.env")
+load_dotenv(dotenv_path=dotenv_path)
 
 app = FastAPI()
 
@@ -36,10 +37,10 @@ app.add_middleware(
 # --- SQL Server Config ---
 
 SQL_SERVER_CONFIG = {
-    "server": os.getenv("DB_SERVER", "TOCINO-CRUJIENT"),
-    "database": os.getenv("DB_DATABASE", "DWH_STGRHPBI"),
-    "username": os.getenv("DB_USER", "renzo"),
-    "password": os.getenv("DB_PASSWORD", "renzo2002"),
+    "server": os.getenv("DB_SERVER"),
+    "database": os.getenv("DB_DATABASE"),
+    "username": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
     "driver": "{ODBC Driver 17 for SQL Server}",
 }
 
@@ -109,7 +110,7 @@ llm_rag = OllamaLLM(
 )
 
 # Groq client setup
-groq_api_key = os.getenv("GROQ_API_KEY", "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")
+groq_api_key = os.getenv("GROQ_API_KEY")
 groq_client = Groq(api_key=groq_api_key)
 groq_model = "llama3-70b-8192"
 
