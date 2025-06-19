@@ -246,15 +246,22 @@ def create_rag_pipeline(vectorstore):
 
 # --- Init pipeline
 
+rag_pipeline = None
 VECTORSTORE_PATH = "chroma_db"
-if not Path(VECTORSTORE_PATH).exists():
-    print(">>> Primera vez: cargando datos SQL y creando vectorstore...")
-    docs = fetch_data_from_sql()
-    vectorstore = setup_vectorstore(docs, persist_directory=VECTORSTORE_PATH)
-else:
-    vectorstore = setup_vectorstore([], persist_directory=VECTORSTORE_PATH)
 
-rag_pipeline = create_rag_pipeline(vectorstore)
+def initialize_rag_pipeline():
+    global rag_pipeline
+    if not Path(VECTORSTORE_PATH).exists():
+        print(">>> Primera vez: cargando datos SQL y creando vectorstore...")
+        docs = fetch_data_from_sql()
+        vectorstore = setup_vectorstore(docs, persist_directory=VECTORSTORE_PATH)
+    else:
+        vectorstore = setup_vectorstore([], persist_directory=VECTORSTORE_PATH)
+
+    rag_pipeline = create_rag_pipeline(vectorstore)
+
+if __name__ == "__main__" or os.getenv("RUNNING_TESTS") != "1":
+    initialize_rag_pipeline()
 
 # --- Endpoints ---
 
