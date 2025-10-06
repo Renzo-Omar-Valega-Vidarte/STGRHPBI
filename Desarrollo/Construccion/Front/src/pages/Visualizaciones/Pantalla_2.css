@@ -1,18 +1,18 @@
 @font-face {
     font-family: "ColfaxAI";
     src: url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff2) format("woff2"),
-         url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff) format("woff");
+          url(https://cdn.openai.com/API/fonts/ColfaxAIRegular.woff) format("woff");
     font-weight: normal;
     font-style: normal;
-  }
+}
   
 @font-face {
     font-family: "ColfaxAI";
     src: url(https://cdn.openai.com/API/fonts/ColfaxAIBold.woff2) format("woff2"),
-         url(https://cdn.openai.com/API/fonts/ColfaxAIBold.woff) format("woff");
+          url(https://cdn.openai.com/API/fonts/ColfaxAIBold.woff) format("woff");
     font-weight: bold;
     font-style: normal;
-  }
+}
 
 body {
     font-family: "ColfaxAI", sans-serif;
@@ -83,10 +83,10 @@ height: 80px;
 }
 
 .pantalla-footer {
-  background-color: #55A1BF;
-  color: white;
-  text-align: center;
-  justify-content: center;
+    background-color: #55A1BF;
+    color: white;
+    text-align: center;
+    justify-content: center;
 }
 
 .titulo-link {
@@ -165,6 +165,81 @@ height: 80px;
     margin-bottom: 12px;
 }
 
+/* ---------------------------------------------------------------------- */
+/* CONTENEDORES DE GRÁFICOS Y KPI: CLAVE 'position: relative' AÑADIDA */
+/* ---------------------------------------------------------------------- */
+
+.gasto-container { /* KPI: Habitantes y Promedio de Horas */
+  background-color: #fff;
+  width: 300px;
+  height: 200px; 
+  border: 1.5px solid #55A1BF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative; /* CLAVE AÑADIDA para posicionar los botones */
+}
+
+.grafico-treemap { /* Gráfico: Procedencia del Agua en el Hogar */
+  display: flex;
+  border: 1.5px solid #55A1BF;
+  box-sizing: border-box;
+  width: 45%;
+  position: relative; /* CLAVE AÑADIDA para posicionar los botones */
+  padding-bottom: 48px;
+}
+
+  .grafico-embudo { /* Gráfico: Top 20 ATM */
+  display: flex;
+  border: 1.5px solid #55A1BF;
+  box-sizing: border-box;
+  width: 45%;
+  height:500px;
+  position: relative; /* CLAVE AÑADIDA para posicionar los botones */
+}
+
+.grafico-circulo { /* Gráfico: Distribución de Sistemas de Agua */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1.5px solid #55A1BF;
+  box-sizing: border-box;
+  margin-left: 30px;
+  width: 35%; 
+  height: 100%; 
+  padding: 10px; 
+  position: relative; /* CLAVE AÑADIDA para posicionar los botones */
+}
+
+.grafico-scatter { /* Gráfico: Relación entre MONTO POI y CCPP */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1.5px solid #55A1BF;
+  margin-right: 30px;
+  box-sizing: border-box;
+  width: 61%; 
+  height: 100%; 
+  padding: 10px; 
+  position: relative; /* CLAVE AÑADIDA para posicionar los botones */
+}
+
+/* ---------------------------------------------------------------------- */
+/* CLASE PARA POSICIONAR LOS BOTONES DE COPIAR/DESCARGAR */
+/* ---------------------------------------------------------------------- */
+
+.copiar-container-wrapper {
+    position: absolute; /* CLAVE: Posicionamiento absoluto respecto a su contenedor padre (con position: relative) */
+    bottom: 5px;        /* 5px desde el borde inferior */
+    left: 10px;         /* 10px desde el borde izquierdo */
+    z-index: 10;        /* Asegura que esté por encima del contenido del gráfico */
+}
+
+/* ---------------------------------------------------------------------- */
+/* RESTO DE CLASES */
+/* ---------------------------------------------------------------------- */
+
 .graficos-contenedor {
   display: flex;
   justify-content: space-between;
@@ -172,21 +247,6 @@ height: 80px;
   margin-right: 30px;
   margin-top: 10px;
   gap: 20px;
-}
-
-  .grafico-treemap {
-  display: flex;
-  border: 1.5px solid #55A1BF;
-  box-sizing: border-box;
-  width: 45%;
-}
-
-  .grafico-embudo {
-  display: flex;
-  border: 1.5px solid #55A1BF;
-  box-sizing: border-box;
-  width: 45%;
-  height: 465px;
 }
 
 .contenedor-graficos {
@@ -198,32 +258,38 @@ height: 80px;
   box-sizing: border-box;
 }
 
-.grafico-circulo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border: 1.5px solid #55A1BF;
-  box-sizing: border-box;
-  margin-left: 30px;
-  width: 35%; 
-  height: 100%; 
-  padding: 10px; 
-}
-
-.grafico-scatter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border: 1.5px solid #55A1BF;
-  margin-right: 30px;
-  box-sizing: border-box;
-  width: 61%; 
-  height: 100%; 
-  padding: 10px; 
-}
-
-
 .scatter-container {
   width: 100%;
   height: 100%;
+}
+
+.leyenda-grafico {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.leyenda-grafico .item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leyenda-grafico .punto {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.texto-convencional {
+  color: #01BF7D;
+}
+
+.texto-noconvencional {
+  color: #FF8042;
 }
