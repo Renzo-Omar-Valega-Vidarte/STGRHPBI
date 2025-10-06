@@ -10,6 +10,24 @@ ORDER BY TOTAL_EJECUCION DESC;
         """
     },
     {
+        "question": "¿Cuales son los 10 distritos de Lima en 2023 que cuenta con mayor continuidad del servicio de agua de al menos 16 horas al día?",
+        "query": """
+SELECT TOP 10
+    u.DISTRITO,
+    MAX(e.[130ZA]) AS Max_Horas_Servicio
+FROM Enapres.FACT_ENAPRES e
+INNER JOIN Generico.DIM_FECHA f 
+    ON e.Fecha_Key = f.Fecha_Key
+INNER JOIN Generico.DIM_UBIGEO u 
+    ON e.Ubigeo_Key = u.Ubigeo_Key
+WHERE f.ANIO = '2023'
+  AND u.REGION LIKE '%Lima%'
+  AND e.[130ZA] >= 16
+GROUP BY u.DISTRITO, u.DEPARTAMENTO
+ORDER BY Max_Horas_Servicio DESC;
+        """
+    },
+    {
         "question": "¿Qué departamentos tuvieron el menor gasto de monto ejecución?",
         "query": """
 SELECT TOP 1 U.DEPARTAMENTO, SUM(F.MONTO_EJECUCION) AS TOTAL_EJECUCION

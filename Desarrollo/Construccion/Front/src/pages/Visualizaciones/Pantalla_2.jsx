@@ -1,17 +1,20 @@
-import React, { useState, useEffect} from 'react';
+// Pantalla_2_refactor.jsx
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import LoadingScreen from '../Pantalla_Carga/LoadingScreen';
 import { Link } from 'react-router-dom';
 import UNMSMAzul from '../../assets/unmsm_azul.jpg';
 import UNMSMFisi from '../../assets/fisi_unmsm.png';
 import ChatBot from '../ChatBot/ChatBot';
+import Copiar from "./Copiar";
 import Descarga from '../Descarga/BotonCaptura';
 import './Pantalla_2.css';
 import { fetchData } from '../../services/dataService';
-import { Treemap, Tooltip, ResponsiveContainer,FunnelChart, Funnel,  LabelList,BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ScatterChart,
-  Scatter, Legend
+import {
+  Treemap, Tooltip as ReTooltip, ResponsiveContainer, BarChart, Bar, LabelList, CartesianGrid,
+  XAxis, YAxis, PieChart, Pie, Cell, ScatterChart, Scatter, Legend
+} from 'recharts';
 
- } from 'recharts';
-
-function Pantalla2() { 
+function Pantalla2() {
   const [scrolling, setScrolling] = useState(false);
   const [fechas, setFechas] = useState([]);
   const [ubigeo, setUbigeo] = useState([]);
@@ -19,272 +22,231 @@ function Pantalla2() {
   const [departamentoFiltro, setDepartamentoFiltro] = useState('');
   const [enapres, setEnapres] = useState([]);
   const [atmData, setAtmData] = useState([]);
+  const [datosCargados, setDatosCargados] = useState(false);
+  const [errorCarga, setErrorCarga] = useState(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolling(window.scrollY > 50);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolling(window.scrollY > 50);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-  const cargarDatos = async () => {
-    try {
-      const [fechasData, ubigeoData, enapresData, atmDataResp] = await Promise.all([
-        fetchData('dim-fecha'),
-        fetchData('dim-ubigeo'),
-        fetchData('fact-enapres'),
-        fetchData('fact-atm')
-      ]);
+    let mounted = true;
+    const cargarDatos = async () => {
+      try {
+        const [fechasData, ubigeoData, enapresData, atmDataResp] = await Promise.all([
+          fetchData('dim-fecha'),
+          fetchData('dim-ubigeo'),
+          fetchData('fact-enapres'),
+          fetchData('fact-atm')
+        ]);
 
-      setFechas(fechasData);
-      setUbigeo(ubigeoData);
-      setEnapres(Array.isArray(enapresData) ? enapresData : []);
-      setAtmData(Array.isArray(atmDataResp) ? atmDataResp : []); 
+        if (!mounted) return;
 
-      const aniosDisponibles = enapresData
-        .map(d => d.ANIO)
-        .filter(Boolean);
+        setFechas(Array.isArray(fechasData) ? fechasData : []);
+        setUbigeo(Array.isArray(ubigeoData) ? ubigeoData : []);
+        setEnapres(Array.isArray(enapresData) ? enapresData : []);
+        setAtmData(Array.isArray(atmDataResp) ? atmDataResp : []);
 
-      const maxAnio = Math.max(...aniosDisponibles.map(Number));
-      if (!anioFiltro) {
-        setAnioFiltro(maxAnio.toString());
+        // calcular año max con defensas
+        const aniosDisponibles = (Array.isArray(enapresData) ? enapresData : [])
+          .map(d => d.ANIO)
+          .filter(Boolean)
+          .map(String);
+
+        if (aniosDisponibles.length > 0 && !anioFiltro) {
+          const maxAnio = aniosDisponibles.reduce((a, b) => a > b ? a : b);
+          setAnioFiltro(String(maxAnio));
+        }
+
+        setDatosCargados(true);
+      } catch (err) {
+        console.error('Error cargando datos:', err);
+        if (mounted) {
+          setErrorCarga(err);
+          setDatosCargados(true); // seguir mostrando UI (puede mostrar mensaje)
+        }
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  cargarDatos();
-}, []);
-
-
-  const enapresFiltrado = enapres.filter(item => {
-    const coincideAnio = anioFiltro ? item.ANIO === anioFiltro : true;
-    const coincideDepartamento = departamentoFiltro ? item.DEPARTAMENTO === departamentoFiltro : true;
-    return coincideAnio && coincideDepartamento;
-  });
-
-  const enapresConProcedencia = enapresFiltrado.filter(item => {
-  const procedencia = item['ProcedenciaAgua'];
-  return procedencia && procedencia.trim() !== '' && procedencia.toLowerCase() !== 'null';
-  });
-
-  // Total válido para usar como denominador
-  const totalProcedencias = enapresConProcedencia.length;
-
-  const procedenciaCounts = enapresConProcedencia.reduce((acc, item) => {
-    const tipo = item['ProcedenciaAgua'].trim();
-    acc[tipo] = (acc[tipo] || 0) + 1;
-    return acc;
-  }, {});
-
-  // Convertir a porcentajes
-  const procedenciaData = Object.entries(procedenciaCounts)
-    .map(([name, count]) => ({
-      name: `${name} (${((count / totalProcedencias) * 100).toFixed(1)}%)`,
-      size: count
-    }))
-    .sort((a, b) => b.size - a.size);
-
-
-
-  const enapresValidos = enapresFiltrado.filter(item =>
-  String(item['129B']) === '1' || String(item['129B']) === '2'
-);
-
-    // Solo contar los que SÍ tienen agua potable 
-    const conAguaPotable = enapresValidos.filter(item => String(item['129B']) === '1').length;
-
-    const totalValidos = enapresValidos.length;
-
-    const gastoPorHabitante = totalValidos > 0
-      ? `${((conAguaPotable / totalValidos) * 100).toFixed(2)}%`
-      : 'Sin datos';
-  
-  const diasValidos = enapresFiltrado
-    .map(item => item['130ZA'])
-    .filter(valor =>
-      valor !== null &&
-      valor !== undefined &&
-      valor !== '' &&
-      valor !== 'null' &&
-      !isNaN(Number(valor)) &&
-      Number(valor) >= 0
-    )
-    .map(valor => Number(valor));
-
-    let promedioDiasAgua = 'Sin datos';
-  let categoriaAgua = '';
-  let colorAgua = '';
-
-if (diasValidos.length > 0) {
-  const suma = diasValidos.reduce((a, b) => a + b, 0);
-  const promedio = suma / diasValidos.length;
-  promedioDiasAgua = promedio.toFixed(2);
-
-  if (promedio <= 8) {
-    categoriaAgua = 'Crítico';
-    colorAgua = 'rojo';
-  } else if (promedio <= 12) {
-    categoriaAgua = 'Bajo';
-    colorAgua = 'naranja';
-  } else if (promedio <= 20) {
-    categoriaAgua = 'Aceptable';
-    colorAgua = 'amarillo';
-  } else {
-    categoriaAgua = 'Bueno';
-    colorAgua = 'verde';
-  }
-}
-
-const atmFiltrado = atmData.filter(item => {
-  const coincideAnio = anioFiltro ? item.ANIO === anioFiltro : true;
-  const coincideDepartamento = departamentoFiltro ? item.DEPARTAMENTO === departamentoFiltro : true;
-  return coincideAnio && coincideDepartamento;
-});
-console.log("📊 ATM filtrado:", atmFiltrado);
-
-const coberturaPorATM = {};
-
-atmFiltrado.forEach((item, idx) => {
-  const ATM = item.ATM;
-  const conAgua = Number(item.CCPP_SIST_AGUA);
-  const total = Number(item.CCPP_TOTAL);
-
-  if (
-    !ATM || 
-    isNaN(conAgua) || 
-    isNaN(total) || 
-    total === 0
-  ) {
-    return;
-  }
-
-  if (!coberturaPorATM[ATM]) {
-    coberturaPorATM[ATM] = { agua: 0, total: 0 };
-  }
-
-  coberturaPorATM[ATM].agua += conAgua;
-  coberturaPorATM[ATM].total += total;
-});
-
-
-// Convertir a arreglo para graficar
-const coberturaData = Object.entries(coberturaPorATM)
-  .map(([ATM, valores], i) => {
-    if (!valores.total || valores.total === 0) {
-      return null;
-    }
-
-    const porcentaje = ((valores.agua / valores.total) * 100).toFixed(2);
-    return {
-      name: `${ATM} (${porcentaje}%)`,
-      value: Number(porcentaje)
     };
-  })
-  .filter(Boolean)
-  .sort((a, b) => a.value - b.value) 
-  .slice(0, 20);  
 
-    const diasDebug = enapresFiltrado.map(d => d['130ZA']);
-    const diasNumericos = diasDebug.filter(d => !isNaN(Number(d)));
-    console.log('Promedio manual:', 
-      diasNumericos.reduce((a, b) => Number(a) + Number(b), 0) / diasNumericos.length
-    )
+    cargarDatos();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ejecutar una vez
 
-
-    enapresFiltrado.forEach((item, index) => {
-      if (index < 10) {
-        console.log(`🔎 Fila ${index + 1}:`, {
-          CCPP_SIST_CONV: item.CCPP_SIST_CONV,
-          CCPP_SIST_NCONV: item.CCPP_SIST_NCONV
-        });
-      }
+  // --- MEMOIZAR FILTRADOS Y AGREGACIONES PESADAS ---
+  const enapresFiltrado = useMemo(() => {
+    if (!enapres || enapres.length === 0) return [];
+    const anoFiltroStr = anioFiltro ? String(anioFiltro) : '';
+    return enapres.filter(item => {
+      const ano = item.ANIO != null ? String(item.ANIO) : '';
+      const coincideAnio = anoFiltroStr ? ano === anoFiltroStr : true;
+      const coincideDepartamento = departamentoFiltro ? item.DEPARTAMENTO === departamentoFiltro : true;
+      return coincideAnio && coincideDepartamento;
     });
-console.log("✅ Cobertura por ATM:", coberturaData);
+  }, [enapres, anioFiltro, departamentoFiltro]);
 
+  const enapresConProcedencia = useMemo(() => {
+    if (!enapresFiltrado || enapresFiltrado.length === 0) return [];
+    return enapresFiltrado.filter(item => {
+      const p = item['ProcedenciaAgua'];
+      return p && String(p).trim() !== '' && String(p).toLowerCase() !== 'null';
+    });
+  }, [enapresFiltrado]);
 
-  // Calcular totales usando atmFiltrado
-  const totalConvencional = atmFiltrado.filter(item =>
-    typeof item.CCPP_SIST_CONV === 'number' && item.CCPP_SIST_CONV > 0
-  ).length;
+  const procedenciaData = useMemo(() => {
+    const counts = new Map();
+    for (const item of enapresConProcedencia) {
+      const tipo = String(item['ProcedenciaAgua']).trim();
+      counts.set(tipo, (counts.get(tipo) || 0) + 1);
+    }
+    const total = Array.from(counts.values()).reduce((a, b) => a + b, 0) || 0;
+    return Array.from(counts.entries())
+      .map(([name, count]) => ({
+        name: `${name} (${total ? ((count / total) * 100).toFixed(1) : '0.0'}%)`,
+        size: count
+      }))
+      .sort((a, b) => b.size - a.size);
+  }, [enapresConProcedencia]);
 
-  const totalNoConvencional = atmFiltrado.filter(item =>
-    typeof item.CCPP_SIST_NCONV === 'number' && item.CCPP_SIST_NCONV > 0
-  ).length;
+  const enapresValidos = useMemo(() => {
+    return enapresFiltrado.filter(item =>
+      String(item['129B']) === '1' || String(item['129B']) === '2'
+    );
+  }, [enapresFiltrado]);
 
-  const total = totalConvencional + totalNoConvencional;
+  const gastoPorHabitante = useMemo(() => {
+    const totalValidos = enapresValidos.length;
+    const conAguaPotable = enapresValidos.filter(item => String(item['129B']) === '1').length;
+    return totalValidos > 0 ? `${((conAguaPotable / totalValidos) * 100).toFixed(2)}%` : 'Sin datos';
+  }, [enapresValidos]);
 
-  const sistemasAguaData = total > 0 ? [
-    {
-      name: 'Convencional',
-      value: parseFloat(((totalConvencional / total) * 100).toFixed(2)),
-    },
-    {
-      name: 'No Convencional',
-      value: parseFloat(((totalNoConvencional / total) * 100).toFixed(2)),
-    },
-  ] : [];
+  const promedioDiasAguaYCategoria = useMemo(() => {
+    const dias = enapresFiltrado
+      .map(item => item['130ZA'])
+      .filter(v => v !== null && v !== undefined && v !== '' && String(v).toLowerCase() !== 'null' && !isNaN(Number(v)))
+      .map(Number);
+    if (dias.length === 0) return { promedio: 'Sin datos', categoria: '', color: '' };
+    const suma = dias.reduce((a, b) => a + b, 0);
+    const prom = suma / dias.length;
+    let categoria = '', color = '';
+    if (prom <= 8) { categoria = 'Crítico'; color = 'rojo'; }
+    else if (prom <= 12) { categoria = 'Bajo'; color = 'naranja'; }
+    else if (prom <= 20) { categoria = 'Aceptable'; color = 'amarillo'; }
+    else { categoria = 'Bueno'; color = 'verde'; }
+    return { promedio: prom.toFixed(2), categoria, color };
+  }, [enapresFiltrado]);
 
-  const scatterData = atmFiltrado
-  .filter(item =>
-    item.MONTO_POI != null &&
-    item.CCPP_TOTAL != null &&
-    !isNaN(Number(item.MONTO_POI)) &&
-    !isNaN(Number(item.CCPP_TOTAL))
-  )
-  .map(item => ({
-    x: Number(item.CCPP_TOTAL),
-    y: Number(item.MONTO_POI),
-    name: item.ATM || 'Sin nombre',
-  }));
-console.log("🔬 Datos para scatter:", scatterData);
+  const atmFiltrado = useMemo(() => {
+    if (!atmData || atmData.length === 0) return [];
+    const anoFiltroStr = anioFiltro ? String(anioFiltro) : '';
+    return atmData.filter(item => {
+      const ano = item.ANIO != null ? String(item.ANIO) : '';
+      const coincideAnio = anoFiltroStr ? ano === anoFiltroStr : true;
+      const coincideDepartamento = departamentoFiltro ? item.DEPARTAMENTO === departamentoFiltro : true;
+      return coincideAnio && coincideDepartamento;
+    });
+  }, [atmData, anioFiltro, departamentoFiltro]);
 
+  const coberturaData = useMemo(() => {
+    // Map para agregación por ATM
+    const map = new Map();
+    for (const item of atmFiltrado) {
+      const atm = item.ATM || 'Sin nombre';
+      const conAgua = Number(item.CCPP_SIST_AGUA);
+      const total = Number(item.CCPP_TOTAL);
+      if (!Number.isFinite(conAgua) || !Number.isFinite(total) || total === 0) continue;
+      const existing = map.get(atm) || { agua: 0, total: 0 };
+      existing.agua += conAgua;
+      existing.total += total;
+      map.set(atm, existing);
+    }
+    const arr = Array.from(map.entries()).map(([atm, val]) => {
+      const porcentaje = val.total ? (val.agua / val.total) * 100 : 0;
+      return { name: `${atm} (${porcentaje.toFixed(2)}%)`, value: Number(porcentaje.toFixed(2)) };
+    });
+    // ordenar ascendente y limitar top 20
+    return arr.sort((a, b) => a.value - b.value).slice(0, 20);
+  }, [atmFiltrado]);
+
+  const sistemasAguaData = useMemo(() => {
+    const totalConvencional = atmFiltrado.filter(item => Number(item.CCPP_SIST_CONV) > 0).length;
+    const totalNoConvencional = atmFiltrado.filter(item => Number(item.CCPP_SIST_NCONV) > 0).length;
+    const total = totalConvencional + totalNoConvencional;
+    if (total === 0) return [];
+    return [
+      { name: 'Convencional', value: parseFloat(((totalConvencional / total) * 100).toFixed(2)) },
+      { name: 'No Convencional', value: parseFloat(((totalNoConvencional / total) * 100).toFixed(2)) }
+    ];
+  }, [atmFiltrado]);
+
+  const scatterData = useMemo(() => {
+    return atmFiltrado
+      .filter(item => item.MONTO_POI != null && item.CCPP_TOTAL != null && !isNaN(Number(item.MONTO_POI)) && !isNaN(Number(item.CCPP_TOTAL)))
+      .map(item => ({
+        x: Number(item.CCPP_TOTAL),
+        y: Number(item.MONTO_POI),
+        name: item.ATM || 'Sin nombre',
+      }));
+  }, [atmFiltrado]);
+
+  // --- TOOLTIP CUSTOM (evita ReferenceError) ---
+  const CustomScatterTooltip = useCallback(({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const p = payload[0].payload || {};
+      return (
+        <div style={{ background: 'white', padding: 8, border: '1px solid #ccc' }}>
+          <div style={{ fontWeight: 'bold' }}>{p.name || 'Sin nombre'}</div>
+          <div>N° Centros Poblados: {p.x}</div>
+          <div>Monto POI (S/): {p.y}</div>
+        </div>
+      );
+    }
+    return null;
+  }, []);
+
+  // Si datos no cargados, mostrar loading
+  if (!datosCargados) return <LoadingScreen />;
+
+  // Mensaje de error de carga (no bloqueante)
+  if (errorCarga) {
+    // Puedes personalizar el mensaje
+    console.warn('Hubo un problema al cargar algún dataset. Ver consola para detalles.');
+  }
 
   return (
     <div className="pantalla-container">
-    {/* HEADER */}
       <header className={`pantalla-header ${scrolling ? 'hidden' : ''}`}>
         <div className="header-images">
           <img src={UNMSMAzul} alt="UNMSM Azul" />
-          <Link to="/" className="titulo-link">
-            Solución Tecnológica para la Optimización en la Gestión de Recursos Hídricos en el Perú
-          </Link>
+          <Link to="/" className="titulo-link">Solución Tecnológica para la Optimización en la Gestión de Recursos Hídricos en el Perú</Link>
           <img src={UNMSMFisi} alt="FISI UNMSM" />
         </div>
-        
         <nav className="pantalla-nav">
           <Link to="/pantalla-1">Procesos de Gastos</Link>
           <Link to="/pantalla-2">Procesos de Agua Potable y Alcantarillado</Link>
         </nav>
       </header>
 
-        <section className="pantalla-datos">
+      <section className="pantalla-datos">
         <h1>Procesos de Agua Potable y Alcantarillado</h1>
         <div className="filtros">
           <div className="filtro-contenedor">
             <label>Año</label>
             <select value={anioFiltro} onChange={(e) => setAnioFiltro(e.target.value)}>
-              {[...new Set(enapres.map(d => d.ANIO).filter(Boolean))]
+              {[...new Set(enapres.map(d => String(d.ANIO).trim()).filter(Boolean))]
                 .sort()
-                .map(anio => (
-                  <option key={anio} value={anio}>{anio}</option>
-                ))}
+                .map(anio => <option key={anio} value={anio}>{anio}</option>)}
             </select>
           </div>
-
           <div className="filtro-contenedor">
             <label>Departamento</label>
             <select value={departamentoFiltro} onChange={(e) => setDepartamentoFiltro(e.target.value)}>
               <option value="">Todos</option>
               {[...new Set(enapres.map(d => d.DEPARTAMENTO).filter(Boolean))]
                 .sort()
-                .map(dep => (
-                  <option key={dep} value={dep}>{dep}</option>
-                ))}
+                .map(dep => <option key={dep} value={dep}>{dep}</option>)}
             </select>
           </div>
         </div>
@@ -292,129 +254,139 @@ console.log("🔬 Datos para scatter:", scatterData);
 
       {/* KPI */}
       <section className="kpi-container">
-        <div className="gasto-container">
-          <div className="titulo-tabla">
-            <span>Habitantes con agua potable</span>
-          </div>
+        <div className="gasto-container" id="grafico-habitantes-agua">
+          <div className="titulo-tabla"><span>Habitantes con agua potable</span></div>
           <div className="gasto-content">
             <span className="gasto">{gastoPorHabitante}</span>
           </div>
+          <div className="copiar-container-wrapper">
+            <Copiar idElemento="grafico-habitantes-agua" nombreArchivo="habitantes-agua" />
+          </div>
         </div>
 
-        <div className="gasto-container">
-          <div className="titulo-tabla">
-            <span>Promedio de horas con agua potable</span>
-          </div>
-          <div className={`gasto-content ${colorAgua}`}>
+        <div className="gasto-container" id="grafico-horas-agua">
+          <div className="titulo-tabla"><span>Promedio de horas con agua potable</span></div>
+          <div className={`gasto-content ${promedioDiasAguaYCategoria.color}`}>
             <span className="gasto">
-              {promedioDiasAgua !== 'Sin datos'
-                ? `${promedioDiasAgua} horas - ${categoriaAgua}`
+              {promedioDiasAguaYCategoria.promedio !== 'Sin datos'
+                ? `${promedioDiasAguaYCategoria.promedio} horas - ${promedioDiasAguaYCategoria.categoria}`
                 : 'Sin datos'}
             </span>
           </div>
+          <div className="copiar-container-wrapper">
+            <Copiar idElemento="grafico-horas-agua" nombreArchivo="promedio-horas-agua" />
+          </div>
         </div>
-      </section >
+      </section>
+
       <div className="graficos-contenedor">
-  <section className="grafico-treemap">
-    <h2 className="grafico-titulo">Procedencia del Agua en el Hogar</h2>
-    <div style={{ width: '100%', height: 400 }}>
+        <section className="grafico-treemap" id="grafico-procedencia-agua">
+          <h2 className="grafico-titulo">Procedencia del Agua en el Hogar</h2>
+          <div style={{ width: '100%', height: 400 }}>
+            <ResponsiveContainer>
+              <Treemap data={procedenciaData} dataKey="size" nameKey="name">
+                <ReTooltip />
+              </Treemap>
+            </ResponsiveContainer>
+          </div>
+          <div className="copiar-container-wrapper">
+            <Copiar idElemento="grafico-procedencia-agua" nombreArchivo="procedencia-agua" />
+          </div>
+        </section>
+
+        <section className="grafico-embudo" id="grafico-cobertura-atm">
+          <h2 className="grafico-titulo">Top 20 Municipalidades con menor cobertura de agua potable (%)</h2>
+          <div>
+            <ResponsiveContainer height={400}>
+              <BarChart layout="vertical" data={coberturaData} margin={{ top: 20, right: 30, left: 50, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                <YAxis type="category" dataKey="name" width={200} />
+                <ReTooltip />
+                <Bar dataKey="value" fill="#0088FE">
+                  <LabelList dataKey="value" position="right" formatter={(value) => `${value}%`} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="copiar-container-wrapper">
+            <Copiar idElemento="grafico-cobertura-atm" nombreArchivo="top-atm-menor-cobertura" />
+          </div>
+        </section>
+      </div>
+
+      <div className="contenedor-graficos">
+      <section className="grafico-circulo" id="grafico-sistemas-agua">
+  <h2 className="grafico-titulo">Distribución de Sistemas de Agua</h2>
+
+  <PieChart width={300} height={300}>
+    <Pie
+      dataKey="value"
+      isAnimationActive
+      data={sistemasAguaData}
+      cx="50%"
+      cy="50%"
+      outerRadius={100}
+      label
+    >
+      <Cell fill="#01BF7D" /> {/* Convencional */}
+      <Cell fill="#FF8042" /> {/* No convencional */}
+    </Pie>
+    <ReTooltip />
+  </PieChart>
+
+  {/* Leyenda dentro del mismo contenedor */}
+  <div className="leyenda-grafico">
+    <div className="item">
+      <span className="punto" style={{ backgroundColor: "#01BF7D" }}></span>
+      <span className="texto-convencional">Convencional</span>
+    </div>
+    <div className="item">
+      <span className="punto" style={{ backgroundColor: "#FF8042" }}></span>
+      <span className="texto-noconvencional">No convencional</span>
+    </div>
+  </div>
+
+  <div className="copiar-container-wrapper">
+    <Copiar idElemento="grafico-sistemas-agua" nombreArchivo="distribucion-sistemas-agua" />
+  </div>
+</section>
+ 
+
+  <section className="grafico-scatter" id="grafico-monto-ccpp">
+    <h2 className="grafico-titulo">Relación entre MONTO POI y Total de Centros Poblados</h2>
+    <div className="scatter-container" style={{ width: '100%', height: 400 }}>
       <ResponsiveContainer>
-        <Treemap data={procedenciaData} dataKey="size" nameKey="name">
-          <Tooltip />
-        </Treemap>
+        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 40 }}>
+          <CartesianGrid />
+          <XAxis
+            type="number"
+            dataKey="x"
+            name="CCPP_TOTAL"
+            label={{ value: "N° Centros Poblados", position: "insideBottom", offset: -35 }}
+          />
+          <YAxis
+            type="number"
+            dataKey="y"
+            name="MONTO_POI"
+            label={{ value: "Monto POI (S/)", angle: -90, position: "insideLeft", offset: -55 }}
+          />
+          <ReTooltip content={<CustomScatterTooltip />} />
+          <Scatter data={scatterData} fill="#82ca9d" />
+        </ScatterChart>
       </ResponsiveContainer>
     </div>
-  </section>
-
-  <section className="grafico-embudo">
-    <h2 className="grafico-titulo">Top 20 ATM con menor cobertura de agua potable (%)</h2>
-    <div style={{ width: '100%', height: 400 }}>
-      <ResponsiveContainer>
-        <BarChart
-          layout="vertical"
-          data={coberturaData}
-          margin={{ top: 20, right: 30, left: 50, bottom: 20 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-          <YAxis type="category" dataKey="name" width={200} />
-          <Tooltip />
-          <Bar dataKey="value" fill="#0088FE">
-            <LabelList dataKey="value" position="right" formatter={(value) => `${value}%`} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="copiar-container-wrapper">
+      <Copiar idElemento="grafico-monto-ccpp" nombreArchivo="relacion-monto-ccpp" />
     </div>
   </section>
 </div>
-     
-  <div className="contenedor-graficos">
-      <section className="grafico-circulo">
-        <h2 className="grafico-titulo">Distribución de Sistemas de Agua</h2>
-        <PieChart width={300} height={400}>
-          <Pie
-            dataKey="value"
-            isAnimationActive={true}
-            data={sistemasAguaData}
-            cx="50%"
-            cy="50%"
-            outerRadius={120}
-            fill="#8884d8"
-            label
-          >
-            <Cell fill="#01BF7D" />
-            <Cell fill="#FF8042" />
-          </Pie>
-          <Tooltip />
-        </PieChart>
-      </section>
 
-      <section className="grafico-scatter">
-        <h2 className="grafico-titulo">Relación entre MONTO POI y Número Total de CCPP</h2>
-        <div className="scatter-container">
-          <ResponsiveContainer>
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 40 }}>
-              <CartesianGrid />
-              <XAxis
-                type="number"
-                dataKey="x"
-                name="CCPP_TOTAL"
-                label={{ value: "N° Centros Poblados", position: "insideBottom", offset: -35 }}
-              />
-              <YAxis
-                type="number"
-                dataKey="y"
-                name="MONTO_POI"
-                label={{ value: "Monto POI (S/)", angle: -90, position: "insideLeft", offset: -55 }}
-              />
-              <Tooltip
-                cursor={{ strokeDasharray: "3 3" }}
-                formatter={(value, name) => {
-                  if (name === "x") return [value, "N° Centros Poblados"];
-                  if (name === "y") return [value, "Monto POI (S/)"];
-                  return [value, name];
-                }}
-                labelFormatter={(entry) => `Municipalidad`}
-              />
-              <Scatter
-                data={scatterData}
-                fill="#82ca9d"
-              />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-    </div>
 
-    <div className="rectangulo-blanco"></div>      
-                
-    <Descarga />
-    <ChatBot />
- 
-      <footer className="pantalla-footer">
-        Lima, Perú. 2025
-      </footer>
-      
+
+      <div className="rectangulo-blanco"></div>
+      <Descarga />
+      <ChatBot />
     </div>
   );
 }

@@ -112,7 +112,7 @@ llm_rag = OllamaLLM(
 # Groq client setup
 groq_api_key = os.getenv("GROQ_API_KEY")
 groq_client = Groq(api_key=groq_api_key)
-groq_model = "llama3-70b-8192"
+groq_model = "openai/gpt-oss-120b"
 
 # --- SQL Generator: DeepSeek + Groq Cleaner ---
 
@@ -279,13 +279,24 @@ async def sql_query_endpoint(query: Query):
     try:
         sql, raw_sql = generate_sql_query(query.prompt, return_raw=True)
 
-        if "<" in sql or ">" in sql:
+        # 1) Detectar placeholders reales como <...> (no confundir con '>' de >=)
+        if re.search(r'<[^<>]+>', sql):
             return {
-                "error": "La consulta generada contiene sintaxis inválida (< >). Reformula la pregunta.",
+                "error": "La consulta generada contiene placeholders con '<...>'. Reformula la pregunta.",
                 "sql": sql,
                 "raw_sql": raw_sql
             }
 
+        # 2) Normalizar casos comunes (opcional pero útil):
+        #    Si ANIO se comparó como número (ANIO = 2023) lo convertimos a cadena ('2023')
+        #    Maneja prefijos de alias como "f.ANIO" o "FEC.ANIO"
+        sql = re.sub(
+            r"(?i)\b([A-Za-z0-9_]+\.)?ANIO\s*=\s*(\d{4})",
+            lambda m: (m.group(1) or "") + "ANIO = '" + m.group(2) + "'",
+            sql
+        )
+
+        # 3) Seguridad básica (ya existente)
         if not is_safe_sql(sql):
             return {
                 "error": "Consulta bloqueada por seguridad. Solo se permiten SELECT.",
@@ -314,7 +325,3 @@ async def sql_query_endpoint(query: Query):
             "sql": None,
             "raw_sql": None
         }
-
-
-
-

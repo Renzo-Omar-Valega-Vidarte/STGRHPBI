@@ -11,7 +11,8 @@ async function getFactGastos(req, res) {
         d.ANIO,
         u.DEPARTAMENTO,
         u.POBLACION_DEPARTAMENTO,
-        g.GENERICA_NOMBRE
+        g.GENERICA_NOMBRE,
+        pp.PRODUCTO_PROYECTO_NOMBRE   -- 👈 nuevo campo
       FROM [Gastos].[FACT_GASTOS] f
       INNER JOIN [Generico].[DIM_FECHA] d
         ON f.Fecha_Key = d.Fecha_Key
@@ -19,6 +20,8 @@ async function getFactGastos(req, res) {
         ON f.UBIGEO_Key = u.UBIGEO_Key
       INNER JOIN [Gastos].[DIM_GENERICA] g
         ON f.Generica_Key = g.Generica_Key
+      INNER JOIN [Gastos].[DIM_PRODUCTO_PROYECTO] pp   -- 👈 nuevo JOIN
+        ON f.Producto_Proyecto_Key = pp.Producto_Proyecto_Key
     `);
     res.json(result.recordset);
   } catch (err) {

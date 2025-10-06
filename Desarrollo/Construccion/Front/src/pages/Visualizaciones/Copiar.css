@@ -1,0 +1,28 @@
+.copiar-container {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.copiar-boton {
+  background-color: #26a4d6;   
+  border: none;               
+  border-radius: 8px;         
+  padding: 6px;               
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.copiar-boton:hover {
+  background-color: #066181;  
+}
+
+.copiar-boton img {
+  width: 16px;   
+  height: 16px;
+  max-width: 100%;
+  max-height: 100%;
+}
